@@ -35,4 +35,7 @@ solution "tinyboard-tools"
 		language "C"
 		kind "ConsoleApp"
 		files { "src/spi_test.c", "src/spi_bitbang.c" }
-
+	project "w25qxx"
+		language "C"
+		kind "ConsoleApp"
+		files {"src/spi_w25qxx.c","src/spi_bitbang.c"}

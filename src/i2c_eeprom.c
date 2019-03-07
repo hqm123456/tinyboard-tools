@@ -229,10 +229,10 @@ int main(int argc, char *argv[])
   }
   
 
-  clock_t start,finish;
-  double duration;
+  // clock_t start,finish;
+  // double duration;
 
-  start = clock();
+  // start = clock();
   // e2prom_write_16bit(handle,0x0000,0x1234);
   //e2prom_erase(handle);
   e2prom_write_8bit(handle,0x00,wDat,sizeof(wDat));

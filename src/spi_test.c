@@ -6,7 +6,11 @@
 #include <stdlib.h>
 #include <windows.h>
 
-const char * help = "Usage: i2cdump I2CBUS ADDRESS\n I2CBUS is an integer\n ADDRESS is an hex integer (0x03 - 0x77)\n";
+
+#define READ_DATA 0x03
+#define WRITE_ENABLE 0x06
+#define PAGE_PROGRAM 0x02
+#define CHIP_ERASE 0xC7
 
 int main(int argc, char *argv[])
 {
@@ -26,21 +30,11 @@ int main(int argc, char *argv[])
   }
 
   if (argc != 1) {
-    if (is_integer(argv[1]) && is_hex(argv[2])) {
+    if (is_integer(argv[1])) {
       sscanf(argv[1], "%d", &sel_dev);
-      uint32_t input_hex;
-      sscanf(argv[2], "%x", &input_hex);
-      if(input_hex < 0x03 || input_hex > 0x77) {
-        puts(help);
-        return 0;
-      } 
-    } else {
-      puts(help);
-      return 0;
     }
-  } else {
-    puts(help);
-    return 0;
+  }else{
+    puts("fail");
   }
 
   if (FT_Open(sel_dev, &handle)) {
@@ -48,7 +42,7 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  ftStatus = FT_SetBitMode(handle, 0x03, FT_BITMODE_SYNC_BITBANG);
+  ftStatus = FT_SetBitMode(handle, 0x0F, FT_BITMODE_SYNC_BITBANG);
   if (ftStatus) {
     return 1;
   }
@@ -62,15 +56,75 @@ int main(int argc, char *argv[])
 
 
   uint8_t dst[1024]={0};
-  uint8_t dat=0;
+  uint8_t length = 2,restart_point;
+  uint8_t dat[10]={0};
+  uint32_t len=0;
 
-  uint32_t len = spi_read(dst);
+  //   len  += spi_initialize(dst);
+
+  //   len += spi_cs_start(dst);
+
+  //   len += spi_write(dst+len,0x90);
+  //   len += spi_write(dst+len,0x00);
+  //   len += spi_write(dst+len,0x10);
+  //   len += spi_write(dst+len,0x00);
+
+
+  //   restart_point = len;
+  //   len += spi_read(dst+len);
+  //   len += spi_read(dst+len);
+  //   len += spi_read(dst+len);
+
+  //  len += spi_cs_end(dst+len);
+
+
+  //写
+
+  len = spi_cs_start(dst);
+  len += spi_write(dst+len,WRITE_ENABLE);
+
+  len += spi_cs_start(dst+len);
+  len += spi_write(dst+len,PAGE_PROGRAM);
+
+
+
+
+  len += spi_write(dst+len,0x00);
+  len += spi_write(dst+len,0x12);
+  len += spi_write(dst+len,0x34);
+
+
+  len += spi_write(dst+len,0x45);
+  len += spi_cs_end(dst+len);
+
+  //读
+
+  len += spi_cs_start(dst+len);
+  len += spi_write(dst+len,READ_DATA); //读 cmd
+
+  len += spi_write(dst+len,0x00);   //地址
+  len += spi_write(dst+len,0X12);
+  len += spi_write(dst+len,0x34); 
+
+  restart_point = len;
+
+  len += spi_read(dst+len);
+  len += spi_cs_end(dst+len);
+
+
+
   uint32_t nbytes;
 
+  printf("\n");
   FT_Write(handle, dst, len, (LPDWORD)&nbytes);
   FT_Read(handle, dst, nbytes, (LPDWORD)&nbytes);
 
-  spi_decoder(dst,&dat);
+  spi_decoder(dst+restart_point,dat,1);
+
+  for(int i=0;i<1;i++)
+  {
+    printf("%0x\n",dat[i]);
+  }
 
 
 
